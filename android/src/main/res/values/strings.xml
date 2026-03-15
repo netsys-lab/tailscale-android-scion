@@ -378,6 +378,7 @@
     <string name="scion_connection">SCION Connection</string>
     <string name="scion_connected_ia">Connected (IA: %1$s)</string>
     <string name="scion_not_connected">Not connected</string>
+    <string name="scion_connecting">Connecting…</string>
     <string name="scion_configuration">Configuration</string>
     <string name="scion_enable">Enable SCION</string>
     <string name="scion_prefer">Prefer SCION paths</string>

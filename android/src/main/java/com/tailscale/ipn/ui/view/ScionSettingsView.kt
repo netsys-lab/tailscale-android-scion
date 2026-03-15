@@ -4,13 +4,17 @@
 package com.tailscale.ipn.ui.view
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -18,6 +22,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -36,6 +41,8 @@ fun ScionSettingsView(
     val prefer by viewModel.prefer.collectAsState()
     val connected by viewModel.scionConnected.collectAsState()
     val localIA by viewModel.localIA.collectAsState()
+    val isApplying by viewModel.isApplying.collectAsState()
+    val lastError by viewModel.lastError.collectAsState()
 
     Scaffold(
         topBar = {
@@ -50,10 +57,12 @@ fun ScionSettingsView(
             Lists.MutedHeader(stringResource(R.string.scion_status))
             Setting.Text(
                 title = stringResource(R.string.scion_connection),
-                subtitle = if (connected)
-                    stringResource(R.string.scion_connected_ia, localIA)
-                else
-                    stringResource(R.string.scion_not_connected)
+                subtitle = when {
+                    isApplying -> stringResource(R.string.scion_connecting)
+                    connected -> stringResource(R.string.scion_connected_ia, localIA)
+                    lastError.isNotEmpty() -> lastError
+                    else -> stringResource(R.string.scion_not_connected)
+                }
             )
 
             Lists.SectionDivider()
@@ -100,9 +109,18 @@ fun ScionSettingsView(
                 Spacer(modifier = Modifier.height(8.dp))
                 Button(
                     onClick = { viewModel.applySettings() },
-                    enabled = enabled,
+                    enabled = enabled && !isApplying,
                 ) {
-                    Text(stringResource(R.string.scion_apply))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (isApplying) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp,
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                        }
+                        Text(stringResource(R.string.scion_apply))
+                    }
                 }
             }
         }

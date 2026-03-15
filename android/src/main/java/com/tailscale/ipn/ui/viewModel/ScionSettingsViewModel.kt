@@ -11,6 +11,7 @@ import com.tailscale.ipn.ui.util.set
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 
 class ScionSettingsViewModel : IpnViewModel() {
     val enabled: StateFlow<Boolean> = MutableStateFlow(false)
@@ -18,6 +19,8 @@ class ScionSettingsViewModel : IpnViewModel() {
     val prefer: StateFlow<Boolean> = MutableStateFlow(false)
     val scionConnected: StateFlow<Boolean> = MutableStateFlow(false)
     val localIA: StateFlow<String> = MutableStateFlow("")
+    val isApplying: StateFlow<Boolean> = MutableStateFlow(false)
+    val lastError: StateFlow<String> = MutableStateFlow("")
 
     init {
         loadSettings()
@@ -66,9 +69,38 @@ class ScionSettingsViewModel : IpnViewModel() {
             prefer = prefer.value,
         )
         App.get().saveScionSettings(settings)
+        isApplying.set(true)
+        lastError.set("")
+
         viewModelScope.launch {
-            kotlinx.coroutines.delay(2000)
-            refreshStatus()
+            // Poll status a few times to catch connection result.
+            // SCION bootstrap takes 2-10 seconds typically.
+            var connected = false
+            for (i in 1..5) {
+                kotlinx.coroutines.delay(2000)
+                val result = pollScionStatus()
+                if (result != null) {
+                    scionConnected.set(result.Connected)
+                    localIA.set(result.LocalIA ?: "")
+                    if (result.Connected || !settings.enabled) {
+                        connected = true
+                        break
+                    }
+                }
+            }
+            if (settings.enabled && !connected) {
+                lastError.set("Could not connect to SCION. Check bootstrap URL and network.")
+            }
+            isApplying.set(false)
+        }
+    }
+
+    private suspend fun pollScionStatus(): Scion.StatusResponse? {
+        return suspendCancellableCoroutine { cont ->
+            Client(viewModelScope).getScionStatus { result ->
+                result.onSuccess { cont.resume(it) {} }
+                result.onFailure { cont.resume(null) {} }
+            }
         }
     }
 }

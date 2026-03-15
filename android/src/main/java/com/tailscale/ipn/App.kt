@@ -177,6 +177,14 @@ class App : UninitializedApp(), libtailscale.AppContext, ViewModelStoreOwner {
     connectivityManager = this.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
     NetworkChangeCallback.monitorDnsChanges(connectivityManager, dns)
     initViewModels()
+    // Auto-connect SCION if enabled in settings. Runs after backend is ready
+    // (configureSCION blocks on a.ready.Wait()) so VPN protect is available.
+    val scionSettings = getScionSettings()
+    if (scionSettings.enabled) {
+      applicationScope.launch(Dispatchers.IO) {
+        app.configureSCION(scionSettings.enabled, scionSettings.bootstrapUrl, scionSettings.prefer)
+      }
+    }
     applicationScope.launch {
       val rm = getSystemService(Context.RESTRICTIONS_SERVICE) as RestrictionsManager
       MDMSettings.update(get(), rm)

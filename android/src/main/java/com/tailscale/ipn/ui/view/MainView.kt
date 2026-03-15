@@ -663,6 +663,18 @@ fun PeerList(
                                       shape = RoundedCornerShape(percent = 50))) {}
                       Spacer(modifier = Modifier.size(8.dp))
                       Text(text = peer.displayName, style = MaterialTheme.typography.titleMedium)
+                      if (peer.isScionCapable) {
+                        Spacer(modifier = Modifier.size(6.dp))
+                        Text(
+                            text = "S",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier =
+                                Modifier.background(
+                                        color = MaterialTheme.colorScheme.primaryContainer,
+                                        shape = RoundedCornerShape(4.dp))
+                                    .padding(horizontal = 4.dp, vertical = 1.dp))
+                      }
                       DropdownMenu(
                           expanded = expandedPeer.value?.StableID == peer.StableID,
                           onDismissRequest = { viewModel.hidePeerDropdownMenu() }) {

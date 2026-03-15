@@ -91,6 +91,9 @@ class Tailcfg {
           Capabilities?.contains("https://tailscale.com/cap/is-admin") == true ||
               CapMap?.contains("https://tailscale.com/cap/is-admin") == true
 
+    val isScionCapable: Boolean
+      get() = Hostinfo.Services?.any { it.Proto == "scion" } == true
+
     // Derives the url to directly administer a node
     val nodeAdminUrl: String
       get() = primaryIPv4Address?.let { "${Links.ADMIN_URL}/machines/${it}" } ?: Links.ADMIN_URL

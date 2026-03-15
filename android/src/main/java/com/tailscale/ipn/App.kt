@@ -31,6 +31,7 @@ import com.tailscale.ipn.ui.localapi.Client
 import com.tailscale.ipn.ui.localapi.Request
 import com.tailscale.ipn.ui.model.Ipn
 import com.tailscale.ipn.ui.model.Netmap
+import com.tailscale.ipn.ui.model.Scion
 import com.tailscale.ipn.ui.notifier.HealthNotifier
 import com.tailscale.ipn.ui.notifier.Notifier
 import com.tailscale.ipn.ui.viewModel.AppViewModel
@@ -67,6 +68,9 @@ class App : UninitializedApp(), libtailscale.AppContext, ViewModelStoreOwner {
     // Key to store the SAF URI in EncryptedSharedPreferences.
     private val PREF_KEY_SAF_URI = "saf_directory_uri"
     private const val TAG = "App"
+    private const val SCION_ENABLED_KEY = "scion_enabled"
+    private const val SCION_BOOTSTRAP_URL_KEY = "scion_bootstrap_url"
+    private const val SCION_PREFER_KEY = "scion_prefer"
     private lateinit var appInstance: App
     /**
      * Initializes the app (if necessary) and returns the singleton app instance. Always use this
@@ -448,6 +452,44 @@ class App : UninitializedApp(), libtailscale.AppContext, ViewModelStoreOwner {
   @Throws(NoSuchKeyException::class)
   override fun hardwareAttestationKeyLoad(id: String) {
     return getKeyStore().load(id)
+  }
+
+  fun getScionSettings(): Scion.Settings {
+    val prefs = getSharedPreferences("unencrypted", MODE_PRIVATE)
+    return Scion.Settings(
+        enabled = prefs.getBoolean(SCION_ENABLED_KEY, false),
+        bootstrapUrl = prefs.getString(SCION_BOOTSTRAP_URL_KEY, "") ?: "",
+        prefer = prefs.getBoolean(SCION_PREFER_KEY, false),
+    )
+  }
+
+  fun saveScionSettings(settings: Scion.Settings) {
+    getSharedPreferences("unencrypted", MODE_PRIVATE)
+        .edit()
+        .putBoolean(SCION_ENABLED_KEY, settings.enabled)
+        .putString(SCION_BOOTSTRAP_URL_KEY, settings.bootstrapUrl)
+        .putBoolean(SCION_PREFER_KEY, settings.prefer)
+        .apply()
+    // Push to Go backend at runtime - MUST run off main thread to prevent ANR
+    applicationScope.launch(Dispatchers.IO) {
+      app.configureSCION(settings.enabled, settings.bootstrapUrl, settings.prefer)
+    }
+  }
+
+  // Go AppContext interface methods for SCION
+  override fun getScionBootstrapURL(): String {
+    return getSharedPreferences("unencrypted", MODE_PRIVATE)
+        .getString(SCION_BOOTSTRAP_URL_KEY, "") ?: ""
+  }
+
+  override fun getScionEnabled(): Boolean {
+    return getSharedPreferences("unencrypted", MODE_PRIVATE)
+        .getBoolean(SCION_ENABLED_KEY, false)
+  }
+
+  override fun getScionPrefer(): Boolean {
+    return getSharedPreferences("unencrypted", MODE_PRIVATE)
+        .getBoolean(SCION_PREFER_KEY, false)
   }
 }
 /**

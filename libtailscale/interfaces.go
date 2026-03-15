@@ -141,6 +141,10 @@ type Application interface {
 	// on every new ipn.Notify message. The returned NotificationManager
 	// allows the watcher to stop watching notifications.
 	WatchNotifications(mask int, cb NotificationCallback) NotificationManager
+
+	// ConfigureSCION updates SCION configuration at runtime.
+	// Must be called from a background thread to avoid ANR.
+	ConfigureSCION(enabled bool, bootstrapURL string, prefer bool)
 }
 
 // FileParts is an array of multiple FileParts.

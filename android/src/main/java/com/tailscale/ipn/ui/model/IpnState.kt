@@ -20,10 +20,12 @@ class IpnState {
       val Path: String = "",
       val Active: Boolean = false,
       val Healthy: Boolean = false,
-      val LatencyMs: Double = -1.0,
+      val LatencyMs: Double = -1.0, // -1 = not measured (from Go side)
       val ExpiresAt: String? = null,
       val MTU: Int? = null,
-  )
+  ) {
+    val hasLatency: Boolean get() = LatencyMs >= 0
+  }
 
   @Serializable
   data class PeerStatus(

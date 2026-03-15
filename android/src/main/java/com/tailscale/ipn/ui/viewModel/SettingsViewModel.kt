@@ -56,6 +56,12 @@ class SettingsViewModel : IpnViewModel() {
       }
     }
 
+    refreshScionEnabled()
+  }
+
+  /** Re-read SCION enabled state from SharedPreferences. Called on init and
+   *  when returning from the SCION settings screen via LaunchedEffect. */
+  fun refreshScionEnabled() {
     scionEnabled.set(App.get().getScionSettings().enabled)
   }
 }

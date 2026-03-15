@@ -175,7 +175,7 @@ fun ScionPathRow(pathInfo: IpnState.SCIONPathInfo) {
       },
       supportingContent = {
         val latencyStr =
-            if (pathInfo.LatencyMs >= 0) stringResource(R.string.scion_latency_ms, pathInfo.LatencyMs)
+            if (pathInfo.hasLatency) stringResource(R.string.scion_latency_ms, pathInfo.LatencyMs)
             else "?"
         val statusStr =
             if (pathInfo.Healthy) stringResource(R.string.scion_path_healthy)

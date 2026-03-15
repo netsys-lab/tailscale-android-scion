@@ -80,10 +80,10 @@ class ScionSettingsViewModel : IpnViewModel() {
 
         isApplying.set(true)
         viewModelScope.launch {
-            // Poll status a few times to catch connection result.
-            // SCION bootstrap takes 2-10 seconds typically.
+            // Poll status to catch connection result.
+            // SCION bootstrap can take 2-15s depending on server response times.
             var connected = false
-            for (i in 1..5) {
+            for (i in 1..8) {
                 kotlinx.coroutines.delay(2000)
                 val result = pollScionStatus()
                 if (result != null) {

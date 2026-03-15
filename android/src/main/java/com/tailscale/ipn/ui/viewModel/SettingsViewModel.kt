@@ -4,6 +4,7 @@
 package com.tailscale.ipn.ui.viewModel
 
 import androidx.lifecycle.viewModelScope
+import com.tailscale.ipn.App
 import com.tailscale.ipn.ui.localapi.Client
 import com.tailscale.ipn.ui.notifier.Notifier
 import com.tailscale.ipn.ui.util.LoadingIndicator
@@ -23,6 +24,7 @@ data class SettingsNav(
     val onNavigateToManagedBy: () -> Unit,
     val onNavigateToUserSwitcher: () -> Unit,
     val onNavigateToPermissions: () -> Unit,
+    val onNavigateToScionSettings: () -> Unit,
     val onNavigateBackHome: () -> Unit,
     val onBackToSettings: () -> Unit,
 )
@@ -34,6 +36,8 @@ class SettingsViewModel : IpnViewModel() {
   val tailNetLockEnabled: StateFlow<Boolean?> = MutableStateFlow(null)
   // True if tailscaleDNS is enabled. nil if not yet known.
   val corpDNSEnabled: StateFlow<Boolean?> = MutableStateFlow(null)
+  // True if SCION is enabled.
+  val scionEnabled: StateFlow<Boolean> = MutableStateFlow(false)
 
   init {
     viewModelScope.launch {
@@ -51,5 +55,7 @@ class SettingsViewModel : IpnViewModel() {
         it?.let { corpDNSEnabled.set(it.CorpDNS) } ?: run { corpDNSEnabled.set(null) }
       }
     }
+
+    scionEnabled.set(App.get().getScionSettings().enabled)
   }
 }

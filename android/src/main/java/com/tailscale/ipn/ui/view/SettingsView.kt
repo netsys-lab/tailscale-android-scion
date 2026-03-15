@@ -55,6 +55,7 @@ fun SettingsView(
   val managedByOrganization by viewModel.managedByOrganization.collectAsState()
   val tailnetLockEnabled by viewModel.tailNetLockEnabled.collectAsState()
   val corpDNSEnabled by viewModel.corpDNSEnabled.collectAsState()
+  val scionEnabled by viewModel.scionEnabled.collectAsState()
   val isVPNPrepared by appViewModel.vpnPrepared.collectAsState()
   val showTailnetLock by MDMSettings.manageTailnetLock.flow.collectAsState()
   val useTailscaleSubnets by MDMSettings.useTailscaleSubnets.flow.collectAsState()
@@ -85,6 +86,13 @@ fun SettingsView(
                         if (it) R.string.using_tailscale_dns else R.string.not_using_tailscale_dns)
                   },
               onClick = settingsNav.onNavigateToDNSSettings)
+
+          Lists.ItemDivider()
+          Setting.Text(
+              R.string.scion_settings,
+              subtitle = if (scionEnabled) stringResource(R.string.enabled)
+                         else stringResource(R.string.disabled),
+              onClick = settingsNav.onNavigateToScionSettings)
 
           Lists.ItemDivider()
           Setting.Text(
@@ -219,5 +227,5 @@ fun SettingsPreview() {
   vm.tailNetLockEnabled.set(true)
   vm.isAdmin.set(true)
   vm.managedByOrganization.set("Tails and Scales Inc.")
-  SettingsView(SettingsNav({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}), vm)
+  SettingsView(SettingsNav({}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}), vm)
 }

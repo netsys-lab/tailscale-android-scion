@@ -69,9 +69,16 @@ class ScionSettingsViewModel : IpnViewModel() {
             prefer = prefer.value,
         )
         App.get().saveScionSettings(settings)
-        isApplying.set(true)
         lastError.set("")
 
+        if (!settings.enabled) {
+            // Disabling - update immediately, no need to poll
+            scionConnected.set(false)
+            localIA.set("")
+            return
+        }
+
+        isApplying.set(true)
         viewModelScope.launch {
             // Poll status a few times to catch connection result.
             // SCION bootstrap takes 2-10 seconds typically.
@@ -82,13 +89,13 @@ class ScionSettingsViewModel : IpnViewModel() {
                 if (result != null) {
                     scionConnected.set(result.Connected)
                     localIA.set(result.LocalIA ?: "")
-                    if (result.Connected || !settings.enabled) {
+                    if (result.Connected) {
                         connected = true
                         break
                     }
                 }
             }
-            if (settings.enabled && !connected) {
+            if (!connected) {
                 lastError.set("Could not connect to SCION. Check bootstrap URL and network.")
             }
             isApplying.set(false)

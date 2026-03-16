@@ -1,4 +1,5 @@
 // Copyright (c) Tailscale Inc & AUTHORS
+// Copyright (c) 2026 netsys-lab
 // SPDX-License-Identifier: BSD-3-Clause
 
 package com.tailscale.ipn.ui.viewModel

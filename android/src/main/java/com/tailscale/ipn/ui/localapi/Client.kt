@@ -10,6 +10,7 @@ import com.tailscale.ipn.ui.model.Errors
 import com.tailscale.ipn.ui.model.Ipn
 import com.tailscale.ipn.ui.model.IpnLocal
 import com.tailscale.ipn.ui.model.IpnState
+import com.tailscale.ipn.ui.model.Scion
 import com.tailscale.ipn.ui.model.StableNodeID
 import com.tailscale.ipn.ui.model.Tailcfg
 import com.tailscale.ipn.ui.util.InputStreamAdapter
@@ -49,6 +50,7 @@ private object Endpoint {
   const val FILE_PUT = "file-put"
   const val TAILFS_SERVER_ADDRESS = "tailfs/fileserver-address"
   const val ENABLE_EXIT_NODE = "set-use-exit-node-enabled"
+  const val SCION_STATUS = "scion-status"
 }
 
 typealias StatusResponseHandler = (Result<IpnState.Status>) -> Unit
@@ -153,6 +155,10 @@ class Client(private val scope: CoroutineScope) {
 
   fun tailnetLockStatus(responseHandler: TailnetLockStatusResponseHandler) {
     get(Endpoint.TKA_STATUS, responseHandler = responseHandler)
+  }
+
+  fun getScionStatus(responseHandler: (Result<Scion.StatusResponse>) -> Unit) {
+    get(Endpoint.SCION_STATUS, responseHandler = responseHandler)
   }
 
   fun fileTargets(responseHandler: (Result<List<Ipn.FileTarget>>) -> Unit) {

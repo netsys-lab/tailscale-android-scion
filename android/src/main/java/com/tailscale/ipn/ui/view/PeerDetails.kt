@@ -35,6 +35,7 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.tailscale.ipn.R
+import com.tailscale.ipn.ui.model.IpnState
 import com.tailscale.ipn.ui.theme.listItem
 import com.tailscale.ipn.ui.theme.short
 import com.tailscale.ipn.ui.util.AndroidTVUtil.isAndroidTV
@@ -56,6 +57,7 @@ fun PeerDetails(
                 PeerDetailsViewModelFactory(nodeId, LocalContext.current.filesDir, pingViewModel))
 ) {
   val isPinging by model.isPinging.collectAsState()
+  val peerStatus by model.peerStatus.collectAsState()
 
   model.netmap.collectAsState().value?.let { netmap ->
     model.node.collectAsState().value?.let { node ->
@@ -109,6 +111,17 @@ fun PeerDetails(
           itemsWithDividers(node.info, key = { "info_${it.titleRes}" }) {
             ValueRow(title = stringResource(id = it.titleRes), value = it.value.getString())
           }
+
+          // SCION Paths section
+          peerStatus?.SCIONPaths?.takeIf { it.isNotEmpty() }?.let { paths ->
+            item(key = "scionDivider") { Lists.SectionDivider() }
+            item(key = "scionHeader") {
+              Lists.MutedHeader(stringResource(R.string.scion_paths))
+            }
+            itemsWithDividers(paths, key = { it.Path }) { pathInfo ->
+              ScionPathRow(pathInfo)
+            }
+          }
         }
         if (isPinging) {
           ModalBottomSheet(onDismissRequest = { model.onPingDismissal() }) {
@@ -151,4 +164,32 @@ fun ValueRow(title: String, value: String) {
       colors = MaterialTheme.colorScheme.listItem,
       headlineContent = { Text(text = title) },
       supportingContent = { Text(text = value) })
+}
+
+@Composable
+fun ScionPathRow(pathInfo: IpnState.SCIONPathInfo) {
+  ListItem(
+      colors = MaterialTheme.colorScheme.listItem,
+      headlineContent = {
+        Text(text = pathInfo.Path, style = MaterialTheme.typography.bodySmall, maxLines = 2)
+      },
+      supportingContent = {
+        val latencyStr =
+            if (pathInfo.hasLatency) stringResource(R.string.scion_latency_ms, pathInfo.LatencyMs)
+            else "?"
+        val statusStr =
+            if (pathInfo.Healthy) stringResource(R.string.scion_path_healthy)
+            else stringResource(R.string.scion_path_unhealthy)
+        Text("$latencyStr - $statusStr")
+      },
+      leadingContent = {
+        if (pathInfo.Active) {
+          Box(
+              modifier =
+                  Modifier.size(8.dp)
+                      .background(
+                          color = MaterialTheme.colorScheme.primary,
+                          shape = RoundedCornerShape(percent = 50)))
+        }
+      })
 }

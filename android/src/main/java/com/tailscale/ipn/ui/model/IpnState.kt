@@ -16,6 +16,18 @@ class IpnState {
   )
 
   @Serializable
+  data class SCIONPathInfo(
+      val Path: String = "",
+      val Active: Boolean = false,
+      val Healthy: Boolean = false,
+      val LatencyMs: Double = -1.0, // -1 = not measured (from Go side)
+      val ExpiresAt: String? = null,
+      val MTU: Int? = null,
+  ) {
+    val hasLatency: Boolean get() = LatencyMs >= 0
+  }
+
+  @Serializable
   data class PeerStatus(
       val ID: StableNodeID,
       val HostName: String,
@@ -37,7 +49,14 @@ class IpnState {
       val ShareeNode: Boolean? = null,
       val Expired: Boolean? = null,
       val Location: Tailcfg.Location? = null,
+      val SCIONPaths: List<SCIONPathInfo>? = null,
   ) {
+    val isScionConnected: Boolean
+      get() = SCIONPaths?.any { it.Active } == true
+
+    val activeScionPath: SCIONPathInfo?
+      get() = SCIONPaths?.firstOrNull { it.Active }
+
     fun computedName(status: Status): String {
       val name = DNSName
       val suffix = status.CurrentTailnet?.MagicDNSSuffix

@@ -74,6 +74,13 @@ type AppContext interface {
 	HardwareAttestationKeyPublic(id string) (pub []byte, err error)
 	HardwareAttestationKeySign(id string, data []byte) (sig []byte, err error)
 	HardwareAttestationKeyLoad(id string) error
+
+	// GetScionEnabled returns whether SCION networking is enabled.
+	GetScionEnabled() (bool, error)
+	// GetScionBootstrapURL returns the user-configured SCION bootstrap URL, or empty.
+	GetScionBootstrapURL() (string, error)
+	// GetScionPrefer returns whether SCION paths should be preferred.
+	GetScionPrefer() (bool, error)
 }
 
 // IPNService corresponds to our IPNService in Java.
@@ -134,6 +141,10 @@ type Application interface {
 	// on every new ipn.Notify message. The returned NotificationManager
 	// allows the watcher to stop watching notifications.
 	WatchNotifications(mask int, cb NotificationCallback) NotificationManager
+
+	// ConfigureSCION updates SCION configuration at runtime.
+	// Must be called from a background thread to avoid ANR.
+	ConfigureSCION(enabled bool, bootstrapURL string, prefer bool)
 }
 
 // FileParts is an array of multiple FileParts.

@@ -36,6 +36,7 @@ android {
     compileSdkVersion 34
     defaultConfig {
         minSdkVersion 26
+        applicationId "io.github.netsyslab.tailscale.scion"
         targetSdkVersion 35
         versionCode 468
         versionName getVersionProperty("VERSION_LONG")

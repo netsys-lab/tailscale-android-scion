@@ -1,0 +1,99 @@
+name: Release APK
+on:
+  push:
+    tags: ['v*']
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Check out android repo
+        uses: actions/checkout@v4
+        with:
+          path: tailscale-android-scion
+
+      - name: Check out tailscale-scion
+        uses: actions/checkout@v4
+        with:
+          repository: netsys-lab/tailscale-scion
+          ref: main
+          path: tailscale-scion
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: tailscale-android-scion/go.mod
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install NDK
+        run: sdkmanager "ndk;29.0.14206865"
+
+      - name: Install gomobile
+        run: |
+          go install golang.org/x/mobile/cmd/gomobile@latest
+          go install golang.org/x/mobile/cmd/gobind@latest
+
+      # Mirrors build-deploy.sh flow:
+      # mkversion -> build-tags.sh -> version-ldflags.sh -> gomobile bind
+      - name: Generate version
+        working-directory: tailscale-android-scion
+        run: |
+          go run tailscale.com/cmd/mkversion > tailscale.version
+          source tailscale.version
+          echo "VERSION_LONG=$VERSION_LONG" >> $GITHUB_ENV
+
+      - name: Build AAR
+        working-directory: tailscale-android-scion
+        env:
+          TOOLCHAIN_DIR: stock
+          GOTOOLCHAIN: local
+          ANDROID_NDK_HOME: ${{ env.ANDROID_HOME }}/ndk/29.0.14206865
+        run: |
+          BUILD_TAGS=$(bash build-tags.sh)
+          VERSION_LDFLAGS=$(bash version-ldflags.sh)
+          mkdir -p android/libs
+          gomobile bind -target android/arm64 -androidapi 26 \
+            -tags "$BUILD_TAGS" \
+            -ldflags "$VERSION_LDFLAGS" \
+            -o android/libs/libtailscale.aar \
+            ./libtailscale
+
+      - name: Build release APK
+        working-directory: tailscale-android-scion/android
+        run: ./gradlew assembleRelease
+
+      - name: Sign APK
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > keystore.jks
+          APKSIGNER=$(find $ANDROID_HOME/build-tools -name apksigner | sort -V | tail -1)
+          APK=$(find tailscale-android-scion/android/build/outputs/apk/release -name '*.apk' | head -1)
+          $APKSIGNER sign --ks keystore.jks \
+            --ks-pass pass:$KEYSTORE_PASSWORD \
+            --ks-key-alias $KEY_ALIAS \
+            --key-pass pass:$KEY_PASSWORD \
+            "$APK"
+          mv "$APK" "tailscale-scion-${{ github.ref_name }}.apk"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: tailscale-scion-*.apk
+          body: |
+            ## Tailscale (SCION) ${{ github.ref_name }} — Android
+
+            Unofficial Tailscale Android client with SCION path-aware networking.
+            Based on Tailscale. Not affiliated with Tailscale Inc.
+
+            **Install:** Download the APK and sideload on your Android device.

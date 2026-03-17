@@ -84,6 +84,18 @@ func start(dataDir, directFileRoot string, hwAttestationPref bool, appCtx AppCon
 		os.Setenv("HOME", dataDir)
 	}
 
+	// Configure SCION environment before backend starts.
+	// These envknobs must be set before any goroutines read them.
+	if enabled, err := appCtx.GetScionEnabled(); err == nil && enabled {
+		os.Setenv("TS_SCION_EMBEDDED", "1")
+		if url, err := appCtx.GetScionBootstrapURL(); err == nil && url != "" {
+			os.Setenv("TS_SCION_BOOTSTRAP_URL", url)
+		}
+		if prefer, err := appCtx.GetScionPrefer(); err == nil && prefer {
+			os.Setenv("TS_PREFER_SCION", "true")
+		}
+	}
+
 	return newApp(dataDir, directFileRoot, hwAttestationPref, appCtx)
 }
 

@@ -30,15 +30,15 @@
     <string name="cancel">Cancel</string>
 
     <!-- Strings for the about screen -->
-    <string name="app_name" translatable="false">Tailscale</string>
-    <string name="tile_name" translatable="false">Tailscale</string>
+    <string name="app_name" translatable="false">Tailscale (SCION)</string>
+    <string name="tile_name" translatable="false">Tailscale (SCION)</string>
     <string name="version">Version</string>
-    <string name="about_view_header">About Tailscale</string>
-    <string name="about_view_title">Tailscale for Android</string>
+    <string name="about_view_header">About Tailscale (SCION)</string>
+    <string name="about_view_title">Tailscale (SCION) for Android</string>
     <string name="acknowledgements">Acknowledgements</string>
     <string name="privacy_policy">Privacy Policy</string>
     <string name="terms_of_service">Terms of Service</string>
-    <string name="about_view_footnotes">WireGuard is a registered trademark of Jason A. Donenfeld.\n\n© 2024 Tailscale Inc. All rights reserved.\nTailscale is a registered trademark of Tailscale Inc.</string>
+    <string name="about_view_footnotes">Based on Tailscale. Not affiliated with Tailscale Inc.\n\nWireGuard is a registered trademark of Jason A. Donenfeld.\n\n© 2024 Tailscale Inc. All rights reserved.\nTailscale is a registered trademark of Tailscale Inc.</string>
     <string name="managed_by">Managed by</string>
 
     <!-- Strings for the bug reporting screen -->
@@ -371,5 +371,26 @@
     <!-- Strings for Hardware Attestation MDM setting -->
     <string name="enable_hardware_attestation">Enable hardware attestation</string>
     <string name="use_hardware_backed_keys_to_bind_node_identity_to_the_device">Use hardware-backed keys to bind node identity to the device</string>
+
+    <!-- SCION Settings -->
+    <string name="scion_settings">SCION Settings</string>
+    <string name="scion_status">Status</string>
+    <string name="scion_connection">SCION Connection</string>
+    <string name="scion_connected_ia">Connected (IA: %1$s)</string>
+    <string name="scion_not_connected">Not connected</string>
+    <string name="scion_connecting">Connecting…</string>
+    <string name="scion_configuration">Configuration</string>
+    <string name="scion_enable">Enable SCION</string>
+    <string name="scion_prefer">Prefer SCION paths</string>
+    <string name="scion_bootstrap_url">Bootstrap Server URL</string>
+    <string name="scion_bootstrap_url_hint">http://bootstrap.example.com:8041</string>
+    <string name="scion_bootstrap_url_description">URL of the SCION bootstrap server. Leave empty to use DNS discovery or built-in defaults.</string>
+    <string name="scion_paths">SCION Paths</string>
+    <string name="scion_path_active">Active</string>
+    <string name="scion_path_healthy">Healthy</string>
+    <string name="scion_path_unhealthy">Unhealthy</string>
+    <string name="scion_latency_ms">%1$.1f ms</string>
+    <string name="scion_via_scion">via SCION</string>
+    <string name="scion_apply">Apply</string>
 
 </resources>

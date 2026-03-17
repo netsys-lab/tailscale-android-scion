@@ -6,15 +6,19 @@ package com.tailscale.ipn.ui.viewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.tailscale.ipn.ui.localapi.Client
+import com.tailscale.ipn.ui.model.IpnState
 import com.tailscale.ipn.ui.model.StableNodeID
 import com.tailscale.ipn.ui.model.Tailcfg
 import com.tailscale.ipn.ui.notifier.Notifier
 import com.tailscale.ipn.ui.util.ComposableStringFormatter
 import com.tailscale.ipn.ui.util.set
 import java.io.File
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.suspendCancellableCoroutine
 
 data class PeerSettingInfo(val titleRes: Int, val value: ComposableStringFormatter)
 
@@ -36,12 +40,32 @@ class PeerDetailsViewModel(
 ) : IpnViewModel() {
   val node: StateFlow<Tailcfg.Node?> = MutableStateFlow(null)
   val isPinging: StateFlow<Boolean> = MutableStateFlow(false)
+  val peerStatus: StateFlow<IpnState.PeerStatus?> = MutableStateFlow(null)
 
   init {
     viewModelScope.launch {
       Notifier.netmap.collect { nm ->
         netmap.set(nm)
         nm?.getPeer(nodeId)?.let { peer -> node.set(peer) }
+      }
+    }
+    // Poll peer status periodically for live SCION path data.
+    // Automatically cancelled when user leaves PeerDetails (viewModelScope).
+    viewModelScope.launch {
+      while (true) {
+        fetchPeerStatus()
+        delay(5000)
+      }
+    }
+  }
+
+  private suspend fun fetchPeerStatus() {
+    suspendCancellableCoroutine { cont ->
+      Client(viewModelScope).status { result ->
+        result.onSuccess { status ->
+          status.Peer?.values?.firstOrNull { it.ID == nodeId }?.let { peerStatus.set(it) }
+        }
+        if (cont.isActive) cont.resume(Unit) {}
       }
     }
   }

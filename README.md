@@ -1,138 +1,75 @@
-# Tailscale Android Client
+# Tailscale (SCION) for Android
 
-https://tailscale.com
+Tailscale Android client with SCION path-aware networking.
 
-Private WireGuard® networks made easy
+## What This Is
 
-## Overview
+A fork of [tailscale/tailscale-android](https://github.com/tailscale/tailscale-android) that adds SCION settings, live path display, and an embedded SCION daemon. Uses [netsys-lab/tailscale-scion](https://github.com/netsys-lab/tailscale-scion) as the Go backend.
 
-This repository contains the open source Tailscale Android client.
+> **This project is not affiliated with or endorsed by Tailscale Inc.**
 
-## Using
+## Install
 
-[<img src="https://play.google.com/intl/en_us/badges/images/generic/en-play-badge.png"
-     alt="Get it on Google Play"
-     height="80">](https://play.google.com/store/apps/details?id=com.tailscale.ipn)
+Download the latest signed APK from [GitHub Releases](https://github.com/netsys-lab/tailscale-android-scion/releases) and sideload it (enable "Install unknown apps" in Android settings).
 
-Help us test new features and bug-fixes before they ship to all users! A [beta testing track](https://play.google.com/apps/testing/com.tailscale.ipn) is available on the Play Store. 
+The app uses a separate application ID (`io.github.netsyslab.tailscale.scion`) and can be installed alongside the official Tailscale app.
 
-#### Amazon Appstore
+## Usage
 
-The app can be downloaded from the [Amazon Appstore](https://www.amazon.com/dp/B0D38TRB3N) for Amazon Fire tablets and Fire TV devices.
+1. Open the app and log in to your Tailscale network.
+2. Go to **Settings → SCION Settings**.
+3. Toggle **Enable SCION** on.
+4. Enter your **Bootstrap Server URL** (e.g., `http://bootstrap.example.com:8041`).
+5. Tap **Apply**.
 
-#### F-Droid
+The status will show "Connecting..." and then "Connected (IA: ...)" on success, or an error message on failure.
 
-The [F-Droid](https://f-droid.org/packages/com.tailscale.ipn/) project builds the source code in this repository and maintains independently-built APKs. Note that F-Droid builds are not released, updated, or verified by the Tailscale team.
+To see SCION paths for a peer, tap the peer in the main list -- the peer details screen shows active paths with latency and health status, updated every 5 seconds.
 
-## Preparing a build environment
+## Building from Source
 
-There are several options for setting up a build environment. The Android Studio
-path is the most useful path for longer term development.
+### Prerequisites
 
-In all cases you will need:
+- Go (latest stable)
+- Android SDK with command-line tools
+- Android NDK (23.1.7779620 as configured in `build.gradle`)
+- Java 17
 
-- Go runtime
-- Android SDK
-- Android SDK components (`make androidsdk` will install them)
+### Setup
 
-### Android Studio
+Clone both repos side-by-side (the `go.mod` has `replace tailscale.com => ../tailscale-scion`):
 
-1. Install a Go runtime (https://go.dev/dl/).
-2. Install Android Studio (https://developer.android.com/studio).
-3. Start Android Studio, from the Welcome screen select "More Actions" and "SDK Manager".
-4. In the SDK manager, select the "SDK Tools" tab and install the "Android SDK Command-line Tools (latest)".
-3. Run `make androidsdk` to install the necessary SDK components.
-
-If you would prefer to avoid Android Studio, you can also install an Android
-SDK. The makefile detects common paths, so `sudo apt install android-sdk` is
-sufficient on Debian / Ubuntu systems. To use an Android SDK installed in a
-non-standard location, set the `ANDROID_SDK_ROOT` environment variable to the
-path to the SDK.
-
-If you installed Android Studio the tools may not be in your path. To get the
-correct tool path, run `make androidpath` and export the provided path in your
-shell.
-
-#### Code Formatting
-
-The ktmft plugin on the default setting should be used to autoformat all Java, Kotlin
-and XML files in Android Studio.  Enable "Format on Save".
-
-### Docker
-
-If you wish to avoid installing software on your host system, a Docker based development strategy is available, you can build and start a shell with:
-
-```sh
-make docker-shell
+```bash
+git clone https://github.com/netsys-lab/tailscale-android-scion.git
+git clone https://github.com/netsys-lab/tailscale-scion.git
+cd tailscale-android-scion
 ```
 
-Several other makefile recipes are available for setting up the proper build environment and running builds.
+### Build (Linux / macOS)
 
-Note that the docker makefile recipes s will preserve the image and remove container on completion.
-If changes are made to the build environment or toolchain, cached docker images may need to be rebuilt.
-The docker build image name is parameterized in the makefile and changing it provides a simple means to do this.
-
-### Nix
-
-If you have Nix 2.4 or later installed, a Nix development environment can
-be set up with:
-
-```sh
-alias nix='nix --extra-experimental-features "nix-command flakes"'
-nix develop
+```bash
+make apk            # build debug APK
+make install         # install on connected device
+make run             # install and launch
 ```
 
-## Building
+The Makefile uses `./tool/go` (Tailscale Go toolchain) and builds for all architectures. The `go.mod` replace directive ensures the SCION backend is used automatically.
 
-```sh
+### Build without SCION
+
+```bash
+export TS_OMIT_SCION=1
 make apk
-make install
 ```
 
-## Building a release
+## Architecture
 
-Use `make tag_release` to bump the Android version code, update the version
-name, and tag the current commit.
+See [docs/architecture.md](docs/architecture.md) for component overview, data flow, and design decisions.
 
-We only guarantee to support the latest Go release and any Go beta or
-release candidate builds (currently Go 1.14) in module mode. It might
-work in earlier Go versions or in GOPATH mode, but we're making no
-effort to keep those working.
+## License
 
-## Developing on a Fire Stick TV
+BSD-3-Clause. Based on [tailscale/tailscale-android](https://github.com/tailscale/tailscale-android).
+SCION networking provided by [scionproto/scion](https://github.com/scionproto/scion) (Apache-2.0).
 
-On the Fire Stick:
-
-* Settings > My Fire TV > Developer Options > ADB Debugging > ON
-
-Then some useful commands:
-```
-adb connect 10.2.200.213:5555
-adb install -r tailscale-fdroid.apk
-adb shell am start -n com.tailscale.ipn/com.tailscale.ipn.MainActivity
-adb shell pm uninstall com.tailscale.ipn
-```
-
-## Bugs
-
-Please file any issues about this code or the hosted service on
-[the tailscale issue tracker](https://github.com/tailscale/tailscale/issues).
-
-## Contributing
-
-`under_construction.gif`
-
-PRs welcome, but we are still working out our contribution process and
-tooling.
-
-We require [Developer Certificate of
-Origin](https://en.wikipedia.org/wiki/Developer_Certificate_of_Origin)
-`Signed-off-by` lines in commits.
-
-## About Us
-
-We are [Tailscale](https://tailscale.com). See
-https://tailscale.com/company for more about us and what we're
-building.
-
+This project is not affiliated with or endorsed by Tailscale Inc.
 WireGuard is a registered trademark of Jason A. Donenfeld.

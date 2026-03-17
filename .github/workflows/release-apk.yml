@@ -18,7 +18,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: netsys-lab/tailscale-scion
-          ref: scion-dev
+          ref: main
           path: tailscale-scion
 
       - uses: actions/setup-go@v5

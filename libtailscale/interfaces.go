@@ -144,7 +144,8 @@ type Application interface {
 
 	// ConfigureSCION updates SCION configuration at runtime.
 	// Must be called from a background thread to avoid ANR.
-	ConfigureSCION(enabled bool, bootstrapURL string, prefer bool)
+	// Returns nil once the config is dispatched (connection is async).
+	ConfigureSCION(enabled bool, bootstrapURL string, prefer bool) error
 }
 
 // FileParts is an array of multiple FileParts.

@@ -44,6 +44,7 @@ fun ScionSettingsView(
     val localIA by viewModel.localIA.collectAsState()
     val isApplying by viewModel.isApplying.collectAsState()
     val lastError by viewModel.lastError.collectAsState()
+    val bootstrapUrlError by viewModel.bootstrapUrlError.collectAsState()
 
     Scaffold(
         topBar = {
@@ -100,6 +101,10 @@ fun ScionSettingsView(
                     placeholder = { Text(stringResource(R.string.scion_bootstrap_url_hint)) },
                     singleLine = true,
                     enabled = enabled,
+                    isError = bootstrapUrlError.isNotEmpty(),
+                    supportingText = if (bootstrapUrlError.isNotEmpty()) {
+                        { Text(bootstrapUrlError, color = MaterialTheme.colorScheme.error) }
+                    } else null,
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
@@ -110,7 +115,7 @@ fun ScionSettingsView(
                 Spacer(modifier = Modifier.height(8.dp))
                 Button(
                     onClick = { viewModel.applySettings() },
-                    enabled = enabled && !isApplying,
+                    enabled = enabled && !isApplying && bootstrapUrlError.isEmpty(),
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         if (isApplying) {

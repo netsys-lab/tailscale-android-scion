@@ -176,20 +176,20 @@ fun ScionPathRow(pathInfo: IpnState.SCIONPathInfo) {
       supportingContent = {
         val latencyStr =
             if (pathInfo.hasLatency) stringResource(R.string.scion_latency_ms, pathInfo.LatencyMs)
-            else "?"
+            else stringResource(R.string.scion_latency_unknown)
         val statusStr =
             if (pathInfo.Healthy) stringResource(R.string.scion_path_healthy)
             else stringResource(R.string.scion_path_unhealthy)
         Text("$latencyStr - $statusStr")
       },
       leadingContent = {
-        if (pathInfo.Active) {
-          Box(
-              modifier =
-                  Modifier.size(8.dp)
-                      .background(
-                          color = MaterialTheme.colorScheme.primary,
-                          shape = RoundedCornerShape(percent = 50)))
-        }
+        Box(
+            modifier =
+                Modifier.size(8.dp)
+                    .background(
+                        color =
+                            if (pathInfo.Active) MaterialTheme.colorScheme.primary
+                            else MaterialTheme.colorScheme.outlineVariant,
+                        shape = RoundedCornerShape(percent = 50)))
       })
 }

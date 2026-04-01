@@ -6,6 +6,7 @@ package com.tailscale.ipn.ui.viewModel
 
 import androidx.lifecycle.viewModelScope
 import com.tailscale.ipn.App
+import com.tailscale.ipn.R
 import com.tailscale.ipn.ui.localapi.Client
 import com.tailscale.ipn.ui.model.Scion
 import com.tailscale.ipn.ui.util.set
@@ -22,6 +23,7 @@ class ScionSettingsViewModel : IpnViewModel() {
     val localIA: StateFlow<String> = MutableStateFlow("")
     val isApplying: StateFlow<Boolean> = MutableStateFlow(false)
     val lastError: StateFlow<String> = MutableStateFlow("")
+    val bootstrapUrlError: StateFlow<String> = MutableStateFlow("")
 
     init {
         loadSettings()
@@ -51,7 +53,25 @@ class ScionSettingsViewModel : IpnViewModel() {
 
     fun setBootstrapUrl(value: String) {
         bootstrapUrl.set(value)
+        validateBootstrapUrl(value)
         // Don't auto-save - user must press Apply button
+    }
+
+    private fun validateBootstrapUrl(url: String) {
+        if (url.isEmpty()) {
+            bootstrapUrlError.set("") // Empty is valid (uses DNS discovery / defaults)
+            return
+        }
+        try {
+            val parsed = java.net.URL(url)
+            if (parsed.protocol != "http" && parsed.protocol != "https") {
+                bootstrapUrlError.set(App.get().getString(R.string.scion_invalid_url_scheme))
+                return
+            }
+            bootstrapUrlError.set("")
+        } catch (e: Exception) {
+            bootstrapUrlError.set(App.get().getString(R.string.scion_invalid_url))
+        }
     }
 
     fun setPrefer(value: Boolean) {
@@ -82,8 +102,9 @@ class ScionSettingsViewModel : IpnViewModel() {
         isApplying.set(true)
         viewModelScope.launch {
             // Poll status to catch connection result.
+            // ReconfigureSCION is async so we poll with a generous window.
             var connected = false
-            for (i in 1..5) {
+            for (i in 1..10) {
                 kotlinx.coroutines.delay(2000)
                 val result = pollScionStatus()
                 if (result != null) {
@@ -96,7 +117,9 @@ class ScionSettingsViewModel : IpnViewModel() {
                 }
             }
             if (!connected) {
-                lastError.set("Could not connect to SCION. Check bootstrap URL and network.")
+                // Don't show a hard error -- connection may still be in progress.
+                // The status section already shows "Not connected" via scionConnected=false.
+                lastError.set(App.get().getString(R.string.scion_connect_timeout))
             }
             isApplying.set(false)
         }
@@ -105,8 +128,8 @@ class ScionSettingsViewModel : IpnViewModel() {
     private suspend fun pollScionStatus(): Scion.StatusResponse? {
         return suspendCancellableCoroutine { cont ->
             Client(viewModelScope).getScionStatus { result ->
-                result.onSuccess { cont.resume(it) {} }
-                result.onFailure { cont.resume(null) {} }
+                result.onSuccess { cont.resume(it) }
+                result.onFailure { cont.resume(null) }
             }
         }
     }

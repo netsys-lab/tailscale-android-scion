@@ -177,12 +177,18 @@ class App : UninitializedApp(), libtailscale.AppContext, ViewModelStoreOwner {
     connectivityManager = this.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
     NetworkChangeCallback.monitorDnsChanges(connectivityManager, dns)
     initViewModels()
-    // Auto-connect SCION if enabled in settings. Runs after backend is ready
-    // (configureSCION blocks on a.ready.Wait()) so VPN protect is available.
+    // Auto-connect SCION if enabled in settings. This is the runtime path that
+    // calls magicsock.ReconfigureSCION(). The Go backend also sets env vars from
+    // these settings before startup (backend.go:87-97) for initial bootstrap.
+    // Both paths are needed: env vars for first init, this call for magicsock reconfigure.
     val scionSettings = getScionSettings()
     if (scionSettings.enabled) {
       applicationScope.launch(Dispatchers.IO) {
-        app.configureSCION(scionSettings.enabled, scionSettings.bootstrapUrl, scionSettings.prefer)
+        try {
+          app.configureSCION(scionSettings.enabled, scionSettings.bootstrapUrl, scionSettings.prefer)
+        } catch (e: Exception) {
+          Log.e(TAG, "Failed to configure SCION on startup: ${e.message}")
+        }
       }
     }
     applicationScope.launch {
@@ -478,9 +484,14 @@ class App : UninitializedApp(), libtailscale.AppContext, ViewModelStoreOwner {
         .putString(SCION_BOOTSTRAP_URL_KEY, settings.bootstrapUrl)
         .putBoolean(SCION_PREFER_KEY, settings.prefer)
         .apply()
-    // Push to Go backend at runtime - MUST run off main thread to prevent ANR
+    // Push to Go backend at runtime - MUST run off main thread to prevent ANR.
+    // Caller polls for connection result via getScionStatus().
     applicationScope.launch(Dispatchers.IO) {
-      app.configureSCION(settings.enabled, settings.bootstrapUrl, settings.prefer)
+      try {
+        app.configureSCION(settings.enabled, settings.bootstrapUrl, settings.prefer)
+      } catch (e: Exception) {
+        Log.e(TAG, "Failed to configure SCION: ${e.message}")
+      }
     }
   }
 

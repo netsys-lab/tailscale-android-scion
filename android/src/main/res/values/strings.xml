@@ -392,5 +392,9 @@
     <string name="scion_latency_ms">%1$.1f ms</string>
     <string name="scion_via_scion">via SCION</string>
     <string name="scion_apply">Apply</string>
+    <string name="scion_connect_timeout">SCION is still connecting. Check status shortly.</string>
+    <string name="scion_latency_unknown">?</string>
+    <string name="scion_invalid_url">Invalid URL format</string>
+    <string name="scion_invalid_url_scheme">URL must start with http:// or https://</string>
 
 </resources>

@@ -14,13 +14,6 @@ jobs:
         with:
           path: tailscale-android-scion
 
-      - name: Check out tailscale-scion
-        uses: actions/checkout@v4
-        with:
-          repository: netsys-lab/tailscale-scion
-          ref: main
-          path: tailscale-scion
-
       - uses: actions/setup-go@v5
         with:
           go-version-file: tailscale-android-scion/go.mod

@@ -52,16 +52,15 @@ class PeerDetailsViewModel(
       }
     }
     // Poll peer status periodically for live SCION path data.
-    // Only active when SCION is enabled; automatically cancelled when
-    // user leaves PeerDetails (viewModelScope).
-    if (App.get().getScionSettings().enabled) {
-      viewModelScope.launch {
-        var delayMs = 5000L
-        while (true) {
-          val success = fetchPeerStatus()
-          delayMs = if (success) 5000L else (delayMs * 2).coerceAtMost(30_000L)
-          delay(delayMs)
-        }
+    // Re-checks getScionSettings().enabled each iteration so toggling
+    // SCION off from Settings stops the poll without requiring screen exit.
+    // Cancelled by viewModelScope when the user leaves PeerDetails.
+    viewModelScope.launch {
+      var delayMs = 5000L
+      while (App.get().getScionSettings().enabled) {
+        val success = fetchPeerStatus()
+        delayMs = if (success) 5000L else (delayMs * 2).coerceAtMost(30_000L)
+        delay(delayMs)
       }
     }
   }

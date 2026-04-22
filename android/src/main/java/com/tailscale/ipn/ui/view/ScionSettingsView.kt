@@ -21,6 +21,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -46,6 +47,13 @@ fun ScionSettingsView(
     val lastError by viewModel.lastError.collectAsState()
     val lastConnectError by viewModel.lastConnectError.collectAsState()
     val bootstrapUrlError by viewModel.bootstrapUrlError.collectAsState()
+
+    // Keep the status row fresh while the screen is visible so users see
+    // background SCION reconnects/drops without manual interaction.
+    DisposableEffect(Unit) {
+        viewModel.startPeriodicStatusRefresh()
+        onDispose { viewModel.stopPeriodicStatusRefresh() }
+    }
 
     Scaffold(
         topBar = {
@@ -88,6 +96,12 @@ fun ScionSettingsView(
                 isOn = prefer,
                 enabled = enabled,
                 onToggle = { viewModel.setPrefer(it) }
+            )
+            Text(
+                text = stringResource(R.string.scion_prefer_description),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
             )
 
             Lists.ItemDivider()

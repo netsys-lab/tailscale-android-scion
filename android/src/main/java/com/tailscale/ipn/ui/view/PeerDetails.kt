@@ -113,7 +113,13 @@ fun PeerDetails(
           }
 
           // SCION Paths section
-          peerStatus?.SCIONPaths?.takeIf { it.isNotEmpty() }?.let { paths ->
+          peerStatus?.SCIONPaths?.takeIf { it.isNotEmpty() }?.let { rawPaths ->
+            // Render active path first, then by latency ascending.
+            // Unmeasured (LatencyMs = -1) paths sort last.
+            val paths = rawPaths.sortedWith(
+                compareByDescending<IpnState.SCIONPathInfo> { it.Active }
+                    .thenBy { if (it.hasLatency) it.LatencyMs else Double.MAX_VALUE }
+            )
             item(key = "scionDivider") { Lists.SectionDivider() }
             item(key = "scionHeader") {
               Lists.MutedHeader(stringResource(R.string.scion_paths))
@@ -168,6 +174,11 @@ fun ValueRow(title: String, value: String) {
 
 @Composable
 fun ScionPathRow(pathInfo: IpnState.SCIONPathInfo) {
+  // A path whose last successful probe is older than this threshold is
+  // visually demoted — the dot goes muted and "stale" appears in the
+  // supporting text. Helps operators spot dying paths at a glance.
+  val staleThresholdSeconds = 30.0
+  val isStale = pathInfo.LastPongSecondsAgo > staleThresholdSeconds
   ListItem(
       colors = MaterialTheme.colorScheme.listItem,
       headlineContent = {
@@ -183,22 +194,20 @@ fun ScionPathRow(pathInfo: IpnState.SCIONPathInfo) {
         val statusStr =
             if (pathInfo.Healthy) stringResource(R.string.scion_path_healthy)
             else stringResource(R.string.scion_path_unhealthy)
-        val parts = buildList {
-          add(latencyStr)
-          add(hopsStr)
-          if (pathInfo.hasLoss) add(stringResource(R.string.scion_loss_percent, pathInfo.LossPercent))
-          add(statusStr)
-        }
-        Text(parts.joinToString(" · "))
+        val base = "$latencyStr · $hopsStr · $statusStr"
+        val text =
+            if (isStale) "$base · ${stringResource(R.string.scion_path_stale)}" else base
+        Text(text)
       },
       leadingContent = {
+        val dotColor = when {
+          isStale -> MaterialTheme.colorScheme.outline
+          pathInfo.Active -> MaterialTheme.colorScheme.primary
+          else -> MaterialTheme.colorScheme.outlineVariant
+        }
         Box(
             modifier =
                 Modifier.size(8.dp)
-                    .background(
-                        color =
-                            if (pathInfo.Active) MaterialTheme.colorScheme.primary
-                            else MaterialTheme.colorScheme.outlineVariant,
-                        shape = RoundedCornerShape(percent = 50)))
+                    .background(color = dotColor, shape = RoundedCornerShape(percent = 50)))
       })
 }

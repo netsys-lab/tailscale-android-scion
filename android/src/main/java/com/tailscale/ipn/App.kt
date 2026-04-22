@@ -468,8 +468,52 @@ class App : UninitializedApp(), libtailscale.AppContext, ViewModelStoreOwner {
     return getKeyStore().load(id)
   }
 
+  // Returns the encrypted SharedPreferences if available, or null if the
+  // Android Keystore isn't accessible (e.g., direct-boot before first unlock,
+  // misconfigured keystore). Callers that need SCION prefs should use
+  // scionPrefs() which falls back to the unencrypted bucket so the app
+  // degrades gracefully rather than crashing at boot.
+  private fun tryEncryptedPrefs(): SharedPreferences? {
+    return try {
+      getEncryptedPrefs()
+    } catch (e: Exception) {
+      Log.w(TAG, "Encrypted prefs unavailable, falling back to unencrypted: ${e.message}")
+      null
+    }
+  }
+
+  private fun scionPrefs(): SharedPreferences {
+    return tryEncryptedPrefs() ?: getSharedPreferences("unencrypted", MODE_PRIVATE)
+  }
+
+  // Idempotent migration from the plaintext bucket to encrypted storage.
+  // If the unencrypted bucket holds SCION keys and encrypted storage is
+  // available, copy them over and clear the unencrypted copies.
+  // Safe to call on every SCION read/write; no-ops if nothing to migrate
+  // or if the keystore is locked.
+  private fun migrateScionPrefsIfNeeded() {
+    val unencrypted = getSharedPreferences("unencrypted", MODE_PRIVATE)
+    val hasLegacy = unencrypted.contains(SCION_ENABLED_KEY) ||
+        unencrypted.contains(SCION_BOOTSTRAP_URL_KEY) ||
+        unencrypted.contains(SCION_PREFER_KEY)
+    if (!hasLegacy) return
+    val encrypted = tryEncryptedPrefs() ?: return
+    encrypted.edit()
+        .putBoolean(SCION_ENABLED_KEY, unencrypted.getBoolean(SCION_ENABLED_KEY, false))
+        .putString(SCION_BOOTSTRAP_URL_KEY, unencrypted.getString(SCION_BOOTSTRAP_URL_KEY, "") ?: "")
+        .putBoolean(SCION_PREFER_KEY, unencrypted.getBoolean(SCION_PREFER_KEY, false))
+        .apply()
+    unencrypted.edit()
+        .remove(SCION_ENABLED_KEY)
+        .remove(SCION_BOOTSTRAP_URL_KEY)
+        .remove(SCION_PREFER_KEY)
+        .apply()
+    Log.i(TAG, "Migrated SCION prefs from unencrypted to encrypted bucket")
+  }
+
   fun getScionSettings(): Scion.Settings {
-    val prefs = getSharedPreferences("unencrypted", MODE_PRIVATE)
+    migrateScionPrefsIfNeeded()
+    val prefs = scionPrefs()
     return Scion.Settings(
         enabled = prefs.getBoolean(SCION_ENABLED_KEY, false),
         bootstrapUrl = prefs.getString(SCION_BOOTSTRAP_URL_KEY, "") ?: "",
@@ -478,7 +522,7 @@ class App : UninitializedApp(), libtailscale.AppContext, ViewModelStoreOwner {
   }
 
   fun saveScionSettings(settings: Scion.Settings) {
-    getSharedPreferences("unencrypted", MODE_PRIVATE)
+    scionPrefs()
         .edit()
         .putBoolean(SCION_ENABLED_KEY, settings.enabled)
         .putString(SCION_BOOTSTRAP_URL_KEY, settings.bootstrapUrl)
@@ -497,18 +541,18 @@ class App : UninitializedApp(), libtailscale.AppContext, ViewModelStoreOwner {
 
   // Go AppContext interface methods for SCION
   override fun getScionBootstrapURL(): String {
-    return getSharedPreferences("unencrypted", MODE_PRIVATE)
-        .getString(SCION_BOOTSTRAP_URL_KEY, "") ?: ""
+    migrateScionPrefsIfNeeded()
+    return scionPrefs().getString(SCION_BOOTSTRAP_URL_KEY, "") ?: ""
   }
 
   override fun getScionEnabled(): Boolean {
-    return getSharedPreferences("unencrypted", MODE_PRIVATE)
-        .getBoolean(SCION_ENABLED_KEY, false)
+    migrateScionPrefsIfNeeded()
+    return scionPrefs().getBoolean(SCION_ENABLED_KEY, false)
   }
 
   override fun getScionPrefer(): Boolean {
-    return getSharedPreferences("unencrypted", MODE_PRIVATE)
-        .getBoolean(SCION_PREFER_KEY, false)
+    migrateScionPrefsIfNeeded()
+    return scionPrefs().getBoolean(SCION_PREFER_KEY, false)
   }
 }
 /**
@@ -571,7 +615,7 @@ open class UninitializedApp : Application() {
   }
 
   private fun getUnencryptedPrefs(): SharedPreferences {
-    return getSharedPreferences(UNENCRYPTED_PREFERENCES, MODE_PRIVATE)
+    return getSharedPreferences("unencrypted", MODE_PRIVATE)
   }
 
   /**

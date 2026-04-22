@@ -52,7 +52,10 @@ fun SettingsView(
   val handler = LocalUriHandler.current
 
   // Refresh SCION state when returning from ScionSettingsView
-  LaunchedEffect(Unit) { viewModel.refreshScionEnabled() }
+  LaunchedEffect(Unit) {
+    viewModel.refreshScionEnabled()
+    viewModel.refreshScionStatus()
+  }
 
   val user by viewModel.loggedInUser.collectAsState()
   val isAdmin by viewModel.isAdmin.collectAsState()
@@ -60,6 +63,8 @@ fun SettingsView(
   val tailnetLockEnabled by viewModel.tailNetLockEnabled.collectAsState()
   val corpDNSEnabled by viewModel.corpDNSEnabled.collectAsState()
   val scionEnabled by viewModel.scionEnabled.collectAsState()
+  val scionConnected by viewModel.scionConnected.collectAsState()
+  val scionLocalIA by viewModel.scionLocalIA.collectAsState()
   val isVPNPrepared by appViewModel.vpnPrepared.collectAsState()
   val showTailnetLock by MDMSettings.manageTailnetLock.flow.collectAsState()
   val useTailscaleSubnets by MDMSettings.useTailscaleSubnets.flow.collectAsState()
@@ -94,8 +99,11 @@ fun SettingsView(
           Lists.ItemDivider()
           Setting.Text(
               R.string.scion_settings,
-              subtitle = if (scionEnabled) stringResource(R.string.enabled)
-                         else stringResource(R.string.disabled),
+              subtitle = when {
+                !scionEnabled -> stringResource(R.string.disabled)
+                scionConnected -> stringResource(R.string.scion_connected_ia, scionLocalIA)
+                else -> stringResource(R.string.scion_not_connected)
+              },
               onClick = settingsNav.onNavigateToScionSettings)
 
           Lists.ItemDivider()

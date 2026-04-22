@@ -32,7 +32,7 @@ apply plugin: 'org.jetbrains.kotlin.plugin.serialization'
 apply plugin: 'com.ncorti.ktfmt.gradle'
 
 android {
-    ndkVersion "23.1.7779620"
+    ndkVersion "29.0.14206865"
     compileSdkVersion 34
     defaultConfig {
         minSdkVersion 26

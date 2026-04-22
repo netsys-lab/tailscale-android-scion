@@ -6,6 +6,7 @@ package com.tailscale.ipn.ui.viewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.tailscale.ipn.App
 import com.tailscale.ipn.ui.localapi.Client
 import com.tailscale.ipn.ui.model.IpnState
 import com.tailscale.ipn.ui.model.StableNodeID
@@ -17,6 +18,7 @@ import java.io.File
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlin.coroutines.resume
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 
@@ -50,22 +52,29 @@ class PeerDetailsViewModel(
       }
     }
     // Poll peer status periodically for live SCION path data.
-    // Automatically cancelled when user leaves PeerDetails (viewModelScope).
+    // Re-checks getScionSettings().enabled each iteration so toggling
+    // SCION off from Settings stops the poll without requiring screen exit.
+    // Cancelled by viewModelScope when the user leaves PeerDetails.
     viewModelScope.launch {
-      while (true) {
-        fetchPeerStatus()
-        delay(5000)
+      var delayMs = 5000L
+      while (App.get().getScionSettings().enabled) {
+        val success = fetchPeerStatus()
+        delayMs = if (success) 5000L else (delayMs * 2).coerceAtMost(30_000L)
+        delay(delayMs)
       }
     }
   }
 
-  private suspend fun fetchPeerStatus() {
-    suspendCancellableCoroutine { cont ->
+  private suspend fun fetchPeerStatus(): Boolean {
+    return suspendCancellableCoroutine { cont ->
       Client(viewModelScope).status { result ->
         result.onSuccess { status ->
           status.Peer?.values?.firstOrNull { it.ID == nodeId }?.let { peerStatus.set(it) }
+          if (cont.isActive) cont.resume(true)
         }
-        if (cont.isActive) cont.resume(Unit) {}
+        result.onFailure {
+          if (cont.isActive) cont.resume(false)
+        }
       }
     }
   }

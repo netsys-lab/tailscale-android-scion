@@ -38,6 +38,10 @@ class SettingsViewModel : IpnViewModel() {
   val corpDNSEnabled: StateFlow<Boolean?> = MutableStateFlow(null)
   // True if SCION is enabled.
   val scionEnabled: StateFlow<Boolean> = MutableStateFlow(false)
+  // True if SCION is currently connected (only meaningful when enabled).
+  val scionConnected: StateFlow<Boolean> = MutableStateFlow(false)
+  // Local SCION ISD-AS when connected; empty otherwise.
+  val scionLocalIA: StateFlow<String> = MutableStateFlow("")
 
   init {
     viewModelScope.launch {
@@ -57,11 +61,30 @@ class SettingsViewModel : IpnViewModel() {
     }
 
     refreshScionEnabled()
+    refreshScionStatus()
   }
 
   /** Re-read SCION enabled state from SharedPreferences. Called on init and
    *  when returning from the SCION settings screen via LaunchedEffect. */
   fun refreshScionEnabled() {
     scionEnabled.set(App.get().getScionSettings().enabled)
+  }
+
+  /** Fetch current SCION connection state from the local API. Cheap: a
+   *  single GET /v0/scion-status. Called on init and when returning to
+   *  this screen so the row subtitle reflects actual connectivity, not
+   *  just the enabled toggle. */
+  fun refreshScionStatus() {
+    if (!App.get().getScionSettings().enabled) {
+      scionConnected.set(false)
+      scionLocalIA.set("")
+      return
+    }
+    Client(viewModelScope).getScionStatus { result ->
+      result.onSuccess { status ->
+        scionConnected.set(status.Connected)
+        scionLocalIA.set(status.LocalIA ?: "")
+      }
+    }
   }
 }

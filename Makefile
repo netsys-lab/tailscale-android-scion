@@ -33,7 +33,7 @@ else
     ANDROID_TOOLS_URL := "https://dl.google.com/android/repository/commandlinetools-mac-9477386_latest.zip"
     ANDROID_TOOLS_SUM := "2072ffce4f54cdc0e6d2074d2f381e7e579b7d63e915c220b96a7db95b2900ee  commandlinetools-mac-9477386_latest.zip"
 endif
-ANDROID_SDK_PACKAGES := 'platforms;android-34' 'extras;android;m2repository' 'ndk;23.1.7779620' 'platform-tools' 'build-tools;34.0.0'
+ANDROID_SDK_PACKAGES := 'platforms;android-34' 'extras;android;m2repository' 'ndk;29.0.14206865' 'platform-tools' 'build-tools;34.0.0'
 
 # Attempt to find an ANDROID_SDK_ROOT / ANDROID_HOME based either from
 # preexisting environment or common locations.
@@ -180,11 +180,12 @@ build-unstripped-aar: tailscale.version $(GOBIN)/gomobile
 	@echo "Output file: $(ABS_UNSTRIPPED_AAR)"
 	mkdir -p $(dir $(ABS_UNSTRIPPED_AAR))
 	rm -f $(ABS_UNSTRIPPED_AAR)
-	# The -linkmode=external -extldflags=-Wl,-z,max-page-size=16384 is specific to NDK 23
-	# to support 16kb page sizes.  Your mileage may vary with other NDK versions.
+	# NDK 29 emits 16 KB-aligned native libraries by default, so the
+	# -linkmode=external -extldflags=-Wl,-z,max-page-size=16384 flags that
+	# were required on NDK 23 are omitted here.
 	$(GOBIN)/gomobile bind -target android -androidapi 26 \
 		-tags "$$(./build-tags.sh)" \
-		-ldflags "-linkmode=external -extldflags=-Wl,-z,max-page-size=16384 $$(./version-ldflags.sh)" \
+		-ldflags "$$(./version-ldflags.sh)" \
 		-o $(ABS_UNSTRIPPED_AAR) ./libtailscale || { echo "gomobile bind failed"; exit 1; }
 	@if [ ! -f $(ABS_UNSTRIPPED_AAR) ]; then \
 	    echo "Error: $(ABS_UNSTRIPPED_AAR) was not created"; exit 1; \

@@ -382,6 +382,7 @@
     <string name="scion_configuration">Configuration</string>
     <string name="scion_enable">Enable SCION</string>
     <string name="scion_prefer">Prefer SCION paths</string>
+    <string name="scion_prefer_description">Use SCION when a peer is reachable via SCION, even if a direct or DERP path is also available.</string>
     <string name="scion_bootstrap_url">Bootstrap Server URL</string>
     <string name="scion_bootstrap_url_hint">http://bootstrap.example.com:8041</string>
     <string name="scion_bootstrap_url_description">URL of the SCION bootstrap server. Leave empty to use DNS discovery or built-in defaults.</string>
@@ -392,5 +393,13 @@
     <string name="scion_latency_ms">%1$.1f ms</string>
     <string name="scion_via_scion">via SCION</string>
     <string name="scion_apply">Apply</string>
+    <string name="scion_connect_timeout">SCION is still connecting. Check status shortly.</string>
+    <string name="scion_latency_unknown">?</string>
+    <string name="scion_invalid_url">Invalid URL format</string>
+    <string name="scion_invalid_url_scheme">URL must start with http:// or https://</string>
+    <string name="scion_last_connect_error">Connect error: %1$s</string>
+    <string name="scion_hops">%1$d hops</string>
+    <string name="scion_hops_same_as">same AS</string>
+    <string name="scion_path_stale">stale</string>
 
 </resources>

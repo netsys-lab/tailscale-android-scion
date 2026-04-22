@@ -113,7 +113,13 @@ fun PeerDetails(
           }
 
           // SCION Paths section
-          peerStatus?.SCIONPaths?.takeIf { it.isNotEmpty() }?.let { paths ->
+          peerStatus?.SCIONPaths?.takeIf { it.isNotEmpty() }?.let { rawPaths ->
+            // Render active path first, then by latency ascending.
+            // Unmeasured (LatencyMs = -1) paths sort last.
+            val paths = rawPaths.sortedWith(
+                compareByDescending<IpnState.SCIONPathInfo> { it.Active }
+                    .thenBy { if (it.hasLatency) it.LatencyMs else Double.MAX_VALUE }
+            )
             item(key = "scionDivider") { Lists.SectionDivider() }
             item(key = "scionHeader") {
               Lists.MutedHeader(stringResource(R.string.scion_paths))
@@ -168,6 +174,11 @@ fun ValueRow(title: String, value: String) {
 
 @Composable
 fun ScionPathRow(pathInfo: IpnState.SCIONPathInfo) {
+  // A path whose last successful probe is older than this threshold is
+  // visually demoted — the dot goes muted and "stale" appears in the
+  // supporting text. Helps operators spot dying paths at a glance.
+  val staleThresholdSeconds = 30.0
+  val isStale = pathInfo.LastPongSecondsAgo > staleThresholdSeconds
   ListItem(
       colors = MaterialTheme.colorScheme.listItem,
       headlineContent = {
@@ -176,20 +187,27 @@ fun ScionPathRow(pathInfo: IpnState.SCIONPathInfo) {
       supportingContent = {
         val latencyStr =
             if (pathInfo.hasLatency) stringResource(R.string.scion_latency_ms, pathInfo.LatencyMs)
-            else "?"
+            else stringResource(R.string.scion_latency_unknown)
+        val hopsStr =
+            if (pathInfo.Hops > 0) stringResource(R.string.scion_hops, pathInfo.Hops)
+            else stringResource(R.string.scion_hops_same_as)
         val statusStr =
             if (pathInfo.Healthy) stringResource(R.string.scion_path_healthy)
             else stringResource(R.string.scion_path_unhealthy)
-        Text("$latencyStr - $statusStr")
+        val base = "$latencyStr · $hopsStr · $statusStr"
+        val text =
+            if (isStale) "$base · ${stringResource(R.string.scion_path_stale)}" else base
+        Text(text)
       },
       leadingContent = {
-        if (pathInfo.Active) {
-          Box(
-              modifier =
-                  Modifier.size(8.dp)
-                      .background(
-                          color = MaterialTheme.colorScheme.primary,
-                          shape = RoundedCornerShape(percent = 50)))
+        val dotColor = when {
+          isStale -> MaterialTheme.colorScheme.outline
+          pathInfo.Active -> MaterialTheme.colorScheme.primary
+          else -> MaterialTheme.colorScheme.outlineVariant
         }
+        Box(
+            modifier =
+                Modifier.size(8.dp)
+                    .background(color = dotColor, shape = RoundedCornerShape(percent = 50)))
       })
 }

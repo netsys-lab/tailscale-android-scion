@@ -21,6 +21,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -44,6 +45,15 @@ fun ScionSettingsView(
     val localIA by viewModel.localIA.collectAsState()
     val isApplying by viewModel.isApplying.collectAsState()
     val lastError by viewModel.lastError.collectAsState()
+    val lastConnectError by viewModel.lastConnectError.collectAsState()
+    val bootstrapUrlError by viewModel.bootstrapUrlError.collectAsState()
+
+    // Keep the status row fresh while the screen is visible so users see
+    // background SCION reconnects/drops without manual interaction.
+    DisposableEffect(Unit) {
+        viewModel.startPeriodicStatusRefresh()
+        onDispose { viewModel.stopPeriodicStatusRefresh() }
+    }
 
     Scaffold(
         topBar = {
@@ -61,6 +71,9 @@ fun ScionSettingsView(
                 subtitle = when {
                     isApplying -> stringResource(R.string.scion_connecting)
                     connected -> stringResource(R.string.scion_connected_ia, localIA)
+                    lastConnectError.isNotEmpty() -> stringResource(
+                        R.string.scion_last_connect_error, lastConnectError
+                    )
                     lastError.isNotEmpty() -> lastError
                     else -> stringResource(R.string.scion_not_connected)
                 }
@@ -84,6 +97,12 @@ fun ScionSettingsView(
                 enabled = enabled,
                 onToggle = { viewModel.setPrefer(it) }
             )
+            Text(
+                text = stringResource(R.string.scion_prefer_description),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+            )
 
             Lists.ItemDivider()
 
@@ -100,6 +119,10 @@ fun ScionSettingsView(
                     placeholder = { Text(stringResource(R.string.scion_bootstrap_url_hint)) },
                     singleLine = true,
                     enabled = enabled,
+                    isError = bootstrapUrlError.isNotEmpty(),
+                    supportingText = if (bootstrapUrlError.isNotEmpty()) {
+                        { Text(bootstrapUrlError, color = MaterialTheme.colorScheme.error) }
+                    } else null,
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
@@ -110,7 +133,7 @@ fun ScionSettingsView(
                 Spacer(modifier = Modifier.height(8.dp))
                 Button(
                     onClick = { viewModel.applySettings() },
-                    enabled = enabled && !isApplying,
+                    enabled = enabled && !isApplying && bootstrapUrlError.isEmpty(),
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         if (isApplying) {

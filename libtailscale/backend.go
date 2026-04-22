@@ -55,9 +55,10 @@ type App struct {
 	logIDPublicAtomic atomic.Pointer[logid.PublicID]
 
 	localAPIHandler http.Handler
-	backend         *ipnlocal.LocalBackend
-	ready           sync.WaitGroup
-	backendMu       sync.Mutex
+	// backend is written once during runBackend before ready.Done().
+	// All readers call ready.Wait() first, so no mutex is needed.
+	backend *ipnlocal.LocalBackend
+	ready   sync.WaitGroup
 }
 
 func start(dataDir, directFileRoot string, hwAttestationPref bool, appCtx AppContext) Application {
@@ -86,8 +87,10 @@ func start(dataDir, directFileRoot string, hwAttestationPref bool, appCtx AppCon
 
 	// Configure SCION environment before backend starts.
 	// These envknobs must be set before any goroutines read them.
+	// Note: App.kt also calls ConfigureSCION() after the backend is ready,
+	// which triggers magicsock.ReconfigureSCION() for runtime reconfiguration.
+	// Both paths are needed: env vars for initial bootstrap, runtime call for magicsock.
 	if enabled, err := appCtx.GetScionEnabled(); err == nil && enabled {
-		os.Setenv("TS_SCION_EMBEDDED", "1")
 		if url, err := appCtx.GetScionBootstrapURL(); err == nil && url != "" {
 			os.Setenv("TS_SCION_BOOTSTRAP_URL", url)
 		}

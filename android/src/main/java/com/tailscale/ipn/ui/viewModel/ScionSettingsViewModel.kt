@@ -12,6 +12,7 @@ import com.tailscale.ipn.ui.model.Scion
 import com.tailscale.ipn.ui.util.set
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlin.coroutines.resume
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 
@@ -23,6 +24,7 @@ class ScionSettingsViewModel : IpnViewModel() {
     val localIA: StateFlow<String> = MutableStateFlow("")
     val isApplying: StateFlow<Boolean> = MutableStateFlow(false)
     val lastError: StateFlow<String> = MutableStateFlow("")
+    val lastConnectError: StateFlow<String> = MutableStateFlow("")
     val bootstrapUrlError: StateFlow<String> = MutableStateFlow("")
 
     init {
@@ -42,6 +44,7 @@ class ScionSettingsViewModel : IpnViewModel() {
             result.onSuccess { status ->
                 scionConnected.set(status.Connected)
                 localIA.set(status.LocalIA ?: "")
+                lastConnectError.set(if (status.Connected) "" else status.LastConnectError ?: "")
             }
         }
     }
@@ -91,6 +94,7 @@ class ScionSettingsViewModel : IpnViewModel() {
         )
         App.get().saveScionSettings(settings)
         lastError.set("")
+        lastConnectError.set("")
 
         if (!settings.enabled) {
             // Disabling - update immediately, no need to poll
@@ -110,6 +114,7 @@ class ScionSettingsViewModel : IpnViewModel() {
                 if (result != null) {
                     scionConnected.set(result.Connected)
                     localIA.set(result.LocalIA ?: "")
+                    lastConnectError.set(if (result.Connected) "" else result.LastConnectError ?: "")
                     if (result.Connected) {
                         connected = true
                         break

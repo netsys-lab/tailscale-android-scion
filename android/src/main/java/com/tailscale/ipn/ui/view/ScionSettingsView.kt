@@ -44,6 +44,7 @@ fun ScionSettingsView(
     val localIA by viewModel.localIA.collectAsState()
     val isApplying by viewModel.isApplying.collectAsState()
     val lastError by viewModel.lastError.collectAsState()
+    val lastConnectError by viewModel.lastConnectError.collectAsState()
     val bootstrapUrlError by viewModel.bootstrapUrlError.collectAsState()
 
     Scaffold(
@@ -62,6 +63,9 @@ fun ScionSettingsView(
                 subtitle = when {
                     isApplying -> stringResource(R.string.scion_connecting)
                     connected -> stringResource(R.string.scion_connected_ia, localIA)
+                    lastConnectError.isNotEmpty() -> stringResource(
+                        R.string.scion_last_connect_error, lastConnectError
+                    )
                     lastError.isNotEmpty() -> lastError
                     else -> stringResource(R.string.scion_not_connected)
                 }

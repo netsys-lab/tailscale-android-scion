@@ -396,5 +396,9 @@
     <string name="scion_latency_unknown">?</string>
     <string name="scion_invalid_url">Invalid URL format</string>
     <string name="scion_invalid_url_scheme">URL must start with http:// or https://</string>
+    <string name="scion_last_connect_error">Connect error: %1$s</string>
+    <string name="scion_hops">%1$d hops</string>
+    <string name="scion_hops_same_as">same AS</string>
+    <string name="scion_loss_percent">loss %1$.0f%%</string>
 
 </resources>

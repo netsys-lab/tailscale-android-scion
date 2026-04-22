@@ -23,8 +23,15 @@ class IpnState {
       val LatencyMs: Double = -1.0, // -1 = not measured (from Go side)
       val ExpiresAt: String? = null,
       val MTU: Int? = null,
+      // Hops is 2 × AS hops; 0 means same-AS (empty SCION path).
+      val Hops: Int = 0,
+      // LossPercent is 100 × (sent - received) / sent in [0,100]; -1 = no pings yet.
+      val LossPercent: Double = -1.0,
+      // LastPongSecondsAgo is how stale the last successful probe is; -1 = no pongs yet.
+      val LastPongSecondsAgo: Double = -1.0,
   ) {
     val hasLatency: Boolean get() = LatencyMs >= 0
+    val hasLoss: Boolean get() = LossPercent >= 0
   }
 
   @Serializable

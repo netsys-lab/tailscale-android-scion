@@ -177,10 +177,19 @@ fun ScionPathRow(pathInfo: IpnState.SCIONPathInfo) {
         val latencyStr =
             if (pathInfo.hasLatency) stringResource(R.string.scion_latency_ms, pathInfo.LatencyMs)
             else stringResource(R.string.scion_latency_unknown)
+        val hopsStr =
+            if (pathInfo.Hops > 0) stringResource(R.string.scion_hops, pathInfo.Hops)
+            else stringResource(R.string.scion_hops_same_as)
         val statusStr =
             if (pathInfo.Healthy) stringResource(R.string.scion_path_healthy)
             else stringResource(R.string.scion_path_unhealthy)
-        Text("$latencyStr - $statusStr")
+        val parts = buildList {
+          add(latencyStr)
+          add(hopsStr)
+          if (pathInfo.hasLoss) add(stringResource(R.string.scion_loss_percent, pathInfo.LossPercent))
+          add(statusStr)
+        }
+        Text(parts.joinToString(" · "))
       },
       leadingContent = {
         Box(

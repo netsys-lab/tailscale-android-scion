@@ -91,7 +91,6 @@ func start(dataDir, directFileRoot string, hwAttestationPref bool, appCtx AppCon
 	// which triggers magicsock.ReconfigureSCION() for runtime reconfiguration.
 	// Both paths are needed: env vars for initial bootstrap, runtime call for magicsock.
 	if enabled, err := appCtx.GetScionEnabled(); err == nil && enabled {
-		os.Setenv("TS_SCION_EMBEDDED", "1")
 		if url, err := appCtx.GetScionBootstrapURL(); err == nil && url != "" {
 			os.Setenv("TS_SCION_BOOTSTRAP_URL", url)
 		}

@@ -17,5 +17,10 @@ class Scion {
     data class StatusResponse(
         val Connected: Boolean = false,
         val LocalIA: String? = null,
+        // LastConnectError is the most recent SCION connect-attempt failure
+        // message, empty if SCION is connected or has never failed.
+        val LastConnectError: String? = null,
+        // LastConnectErrorAt is the RFC3339 wall-clock time of LastConnectError.
+        val LastConnectErrorAt: String? = null,
     )
 }

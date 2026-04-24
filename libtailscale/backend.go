@@ -17,6 +17,7 @@ import (
 	"sync/atomic"
 
 	"tailscale.com/drive/driveimpl"
+	"tailscale.com/envknob"
 	_ "tailscale.com/feature/condregister"
 	"tailscale.com/feature/taildrop"
 	"tailscale.com/hostinfo"
@@ -90,12 +91,24 @@ func start(dataDir, directFileRoot string, hwAttestationPref bool, appCtx AppCon
 	// Note: App.kt also calls ConfigureSCION() after the backend is ready,
 	// which triggers magicsock.ReconfigureSCION() for runtime reconfiguration.
 	// Both paths are needed: env vars for initial bootstrap, runtime call for magicsock.
-	if enabled, err := appCtx.GetScionEnabled(); err == nil && enabled {
-		if url, err := appCtx.GetScionBootstrapURL(); err == nil && url != "" {
-			os.Setenv("TS_SCION_BOOTSTRAP_URL", url)
-		}
-		if prefer, err := appCtx.GetScionPrefer(); err == nil && prefer {
-			os.Setenv("TS_PREFER_SCION", "true")
+	// Use envknob.Setenv so the magicsock-side RegisterBool/RegisterString
+	// caches (which memoize on first call — i.e. at package init, before
+	// start() runs) actually pick up these values. Plain os.Setenv updates
+	// the OS env but leaves the cached knob unchanged.
+	if enabled, err := appCtx.GetScionEnabled(); err == nil {
+		if enabled {
+			envknob.Setenv("TS_SCION_DISABLED", "")
+			if url, err := appCtx.GetScionBootstrapURL(); err == nil && url != "" {
+				envknob.Setenv("TS_SCION_BOOTSTRAP_URL", url)
+			}
+			if prefer, err := appCtx.GetScionPrefer(); err == nil && prefer {
+				envknob.Setenv("TS_PREFER_SCION", "true")
+			}
+		} else {
+			// Suppress magicsock's initSCIONLocked + retrySCIONStartup when
+			// the user has SCION turned off; otherwise /scion-status keeps
+			// reporting "connection error" from the background retry loop.
+			envknob.Setenv("TS_SCION_DISABLED", "1")
 		}
 	}
 

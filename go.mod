@@ -5,7 +5,7 @@ go 1.26.1
 require (
 	github.com/tailscale/wireguard-go v0.0.0-20250716170648-1d0488a3d7da
 	golang.org/x/mobile v0.0.0-20240806205939-81131f6468ab
-	tailscale.com v1.96.5-scion.alpha.6
+	tailscale.com v1.96.5-scion.alpha.11
 )
 
 require (
@@ -117,4 +117,4 @@ require (
 	zgo.at/zcache/v2 v2.1.0 // indirect
 )
 
-replace tailscale.com => github.com/netsys-lab/tailscale-scion v1.96.5-scion.alpha.6
+replace tailscale.com => github.com/netsys-lab/tailscale-scion v1.96.5-scion.alpha.11
